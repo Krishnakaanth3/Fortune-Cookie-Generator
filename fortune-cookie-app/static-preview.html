@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥠 Fortune Cookie Generator - Preview</title>
+    
+    <!-- React and ReactDOM from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+        }
+
+        /* App Container */
+        .app {
+            min-height: 100vh;
+            width: 100vw;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        /* Light Theme - Pure Luxury White */
+        .app.light {
+            background: linear-gradient(135deg, #ffffff 0%, #fefefe 50%, #f8f9fa 100%);
+            color: #1a1a1a;
+        }
+
+        /* Dark Theme - Matte Black */
+        .app.dark {
+            background: linear-gradient(135deg, #0a0a0a 0%, #141414 50%, #1a1a1a 100%);
+            color: #ffffff;
+        }
+
+        /* Header */
+        .header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .light .theme-toggle {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #1a1a1a;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .theme-toggle {
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        /* Main Content */
+        .main {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Fortune Cookie Container */
+        .fortune-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        /* Cookie */
+        .cookie {
+            width: 220px;
+            height: 220px;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            transition: transform 0.3s ease;
+        }
+
+        .cookie:hover {
+            transform: scale(1.05);
+        }
+
+        .cookie.opened {
+            transform: rotateZ(180deg) scale(1.1);
+        }
+
+        .cookie-shape {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #d4af37 0%, #c9a96e 25%, #b8941f 50%, #a67c00 75%, #8b6914 100%);
+            border-radius: 50% 50% 40% 60% / 60% 40% 50% 50%;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .light .cookie-shape {
+            box-shadow: 
+                0 12px 40px rgba(139, 105, 20, 0.25),
+                0 6px 20px rgba(0, 0, 0, 0.15),
+                inset 0 4px 8px rgba(255, 255, 255, 0.3),
+                inset 0 -2px 4px rgba(139, 105, 20, 0.3);
+        }
+
+        .dark .cookie-shape {
+            box-shadow: 
+                0 12px 40px rgba(139, 105, 20, 0.4),
+                0 6px 20px rgba(0, 0, 0, 0.6),
+                inset 0 4px 8px rgba(255, 255, 255, 0.1),
+                inset 0 -2px 4px rgba(139, 105, 20, 0.4);
+        }
+
+        /* Cookie texture spots */
+        .cookie-spot {
+            position: absolute;
+            background: #8b6914;
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        .spot-1 { top: 20%; left: 30%; width: 8px; height: 8px; }
+        .spot-2 { top: 60%; right: 25%; width: 6px; height: 6px; }
+        .spot-3 { bottom: 30%; left: 40%; width: 7px; height: 7px; }
+
+        /* Fortune Paper */
+        .fortune-paper {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 50px;
+            background: linear-gradient(135deg, #faf9f6 0%, #f4f2ed 100%);
+            border-radius: 4px;
+            cursor: grab;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .light .fortune-paper {
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.1),
+                0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .fortune-paper {
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .fortune-paper:active {
+            cursor: grabbing;
+        }
+
+        .fortune-paper.pulled {
+            transform: translateX(-50%) translateY(-200px);
+            opacity: 0;
+        }
+
+        /* Fortune Display */
+        .fortune-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            backdrop-filter: blur(24px);
+            border: 1px solid;
+            transform-style: preserve-3d;
+            opacity: 0;
+            transition: all 0.6s ease;
+        }
+
+        .fortune-display.show {
+            opacity: 1;
+        }
+
+        .light .fortune-display {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a1a1a;
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.12),
+                0 10px 30px rgba(0, 0, 0, 0.08),
+                0 5px 15px rgba(0, 0, 0, 0.04);
+        }
+
+        .dark .fortune-display {
+            background: rgba(15, 15, 15, 0.95);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.8),
+                0 10px 30px rgba(0, 0, 0, 0.6),
+                0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .fortune-text {
+            font-size: 26px;
+            font-weight: 500;
+            line-height: 1.4;
+            margin-bottom: 24px;
+            letter-spacing: 0.3px;
+        }
+
+        .fortune-subtitle {
+            font-size: 14px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .cookie {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .fortune-text {
+                font-size: 22px;
+            }
+            
+            .fortune-display {
+                padding: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const sampleFortunes = [
+            "Today's small acts of kindness will create ripples of joy that reach farther than you can imagine.",
+            "Your heart knows the way forward—trust its gentle whispers and watch magic unfold.",
+            "Someone is thinking of you right now with gratitude and love. You matter more than you know.",
+            "The universe conspires to bring you exactly what your soul needs, exactly when you need it.",
+            "Your smile has the power to turn someone's entire day around. Share it generously today.",
+            "Every challenge you've overcome has made you stronger and more beautiful from within.",
+            "A wonderful surprise awaits you when you least expect it but most deserve it.",
+            "Your authentic self is your greatest gift to the world. Shine unapologetically bright.",
+            "The love you put out into the world always finds its way back to you, multiplied.",
+            "Today marks the beginning of something beautiful that you've been hoping for."
+        ];
+
+        function FortuneCookieApp() {
+            const [isDark, setIsDark] = useState(false);
+            const [isOpened, setIsOpened] = useState(false);
+            const [showPaper, setShowPaper] = useState(false);
+            const [paperPulled, setPaperPulled] = useState(false);
+            const [currentFortune, setCurrentFortune] = useState('');
+            const [showFortune, setShowFortune] = useState(false);
+
+            const toggleTheme = () => {
+                setIsDark(!isDark);
+            };
+
+            const handleCookieClick = () => {
+                if (!isOpened) {
+                    setIsOpened(true);
+                    setTimeout(() => {
+                        setShowPaper(true);
+                        const randomFortune = sampleFortunes[Math.floor(Math.random() * sampleFortunes.length)];
+                        setCurrentFortune(randomFortune);
+                    }, 500);
+                }
+            };
+
+            const handlePaperClick = () => {
+                if (showPaper && !paperPulled) {
+                    setPaperPulled(true);
+                    setTimeout(() => {
+                        setShowFortune(true);
+                    }, 300);
+                }
+            };
+
+            const resetCookie = () => {
+                setIsOpened(false);
+                setShowPaper(false);
+                setPaperPulled(false);
+                setShowFortune(false);
+                setCurrentFortune('');
+            };
+
+            return (
+                <div className={`app ${isDark ? 'dark' : 'light'}`}>
+                    <header className="header">
+                        <button
+                            className="theme-toggle"
+                            onClick={toggleTheme}
+                            title="Toggle theme"
+                        >
+                            {isDark ? '☀️' : '🌙'}
+                        </button>
+                    </header>
+
+                    <main className="main">
+                        <div className="fortune-container">
+                            <div 
+                                className={`cookie ${isOpened ? 'opened' : ''}`}
+                                onClick={handleCookieClick}
+                                title={!isOpened ? "Click to open your fortune cookie!" : ""}
+                            >
+                                <div className="cookie-shape">
+                                    <div className="cookie-spot spot-1"></div>
+                                    <div className="cookie-spot spot-2"></div>
+                                    <div className="cookie-spot spot-3"></div>
+                                </div>
+                                
+                                {showPaper && (
+                                    <div 
+                                        className={`fortune-paper ${paperPulled ? 'pulled' : ''}`}
+                                        onClick={handlePaperClick}
+                                        title="Pull me up to reveal your fortune!"
+                                    >
+                                        Pull me up!
+                                    </div>
+                                )}
+                            </div>
+
+                            {showFortune && (
+                                <div className={`fortune-display ${showFortune ? 'show' : ''}`}>
+                                    <div className="fortune-text">
+                                        {currentFortune}
+                                    </div>
+                                    <div className="fortune-subtitle">
+                                        ✨ Your daily fortune ✨
+                                    </div>
+                                </div>
+                            )}
+
+                            {!isOpened && (
+                                <div className="instructions">
+                                    Click the fortune cookie to discover your message! 🥠
+                                </div>
+                            )}
+
+                            {showFortune && (
+                                <div className="instructions">
+                                    <button 
+                                        onClick={resetCookie}
+                                        style={{
+                                            padding: '10px 20px',
+                                            borderRadius: '20px',
+                                            border: 'none',
+                                            background: isDark ? '#4a5568' : '#e2e8f0',
+                                            color: isDark ? '#fff' : '#000',
+                                            cursor: 'pointer',
+                                            marginTop: '20px'
+                                        }}
+                                    >
+                                        Get Another Fortune 🔄
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    <div style={{
+                        position: 'fixed',
+                        top: '20px',
+                        left: '20px',
+                        background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                        padding: '10px 15px',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        opacity: 0.8
+                    }}>
+                        🚀 Static Preview - Install Node.js for full features
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<FortuneCookieApp />, document.getElementById('root'));
+    </script>
+</body>
+</html> 
